@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Leaflet CSS */
-@import 'leaflet/dist/leaflet.css';
-
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 248, 250, 252;
@@ -13,10 +10,4 @@
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-start-rgb));
-}
-
-/* Leaflet marker fix for Next.js */
-.leaflet-container {
-  width: 100%;
-  height: 100%;
 }

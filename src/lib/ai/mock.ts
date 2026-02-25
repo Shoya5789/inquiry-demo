@@ -107,31 +107,152 @@ export async function mockRecommendSelfHelp(text: string): Promise<{ recommendat
 export async function mockGenerateFollowupQuestions(text: string): Promise<{ questions: FollowupQuestion[] }> {
   const questions: FollowupQuestion[] = []
 
-  // 場所情報がなければ質問
-  if (!/(丁目|番地|交差点|公園|駅|付近|の前|場所|住所|地図)/.test(text)) {
+  // ─── ドメイン特化質問 ────────────────────────────────────────────
+
+  // ゴミ・廃棄物
+  if (/(ゴミ|ごみ|廃棄|粗大|不燃|可燃|資源ゴミ|回収|収集)/.test(text)) {
+    questions.push({
+      id: 'garbage_type',
+      text: '廃棄したいものの種類を教えてください',
+      type: 'single',
+      options: ['可燃ごみ', '不燃ごみ', '資源ごみ（びん・缶・ペットボトル）', '粗大ごみ', 'その他'],
+    })
+    if (questions.length < 3) {
+      questions.push({
+        id: 'garbage_volume',
+        text: 'おおよその量・サイズを教えてください（例：45Lの袋3袋、タンス1台）',
+        type: 'text',
+      })
+    }
+  }
+
+  // 道路・インフラ
+  else if (/(道路|陥没|穴|舗装|アスファルト|歩道|車道|段差|ひび|路面)/.test(text)) {
+    questions.push({
+      id: 'road_severity',
+      text: '損傷の程度を教えてください',
+      type: 'single',
+      options: ['人や車が通れない（通行不可）', '通行できるが危険を感じる', '軽微なひびや段差がある'],
+    })
+    if (questions.length < 3) {
+      questions.push({
+        id: 'road_location',
+        text: '損傷箇所の詳しい場所（交差点名・目印など）を教えてください',
+        type: 'text',
+      })
+    }
+  }
+
+  // 騒音・振動・悪臭
+  else if (/(騒音|うるさい|振動|悪臭|臭い|においが|音がする|轟音)/.test(text)) {
+    questions.push({
+      id: 'noise_time',
+      text: '騒音・被害が発生する時間帯はいつですか？',
+      type: 'multi',
+      options: ['早朝（6時前）', '日中（6〜18時）', '夜間（18〜22時）', '深夜（22時〜）', '不定期'],
+    })
+    if (questions.length < 3) {
+      questions.push({
+        id: 'noise_source',
+        text: '騒音・悪臭の原因として考えられるものを教えてください',
+        type: 'single',
+        options: ['工事・建設作業', '近隣住民', '商業施設・店舗', '車両・交通', '原因不明'],
+      })
+    }
+  }
+
+  // 公園・遊具
+  else if (/(公園|遊具|ブランコ|滑り台|砂場|ベンチ|花壇|草木|雑草)/.test(text)) {
+    questions.push({
+      id: 'park_issue',
+      text: '問題の種類を教えてください',
+      type: 'single',
+      options: ['遊具の破損・危険', '草木の手入れ（草刈り・剪定）', '清掃・ゴミ', '施設・設備の不具合', 'その他'],
+    })
+  }
+
+  // 水道・下水
+  else if (/(水道|水漏れ|断水|下水|排水|詰まり|異臭|水が出ない|ガス管)/.test(text)) {
+    questions.push({
+      id: 'water_type',
+      text: '水道に関する問題の種類を教えてください',
+      type: 'single',
+      options: ['水が出ない（断水）', '水漏れ・破裂している', '水の色・におい・味がおかしい', '下水・排水の詰まり', 'その他'],
+    })
+    if (questions.length < 3) {
+      questions.push({
+        id: 'water_urgency',
+        text: '現在の状況はどの程度緊急ですか？',
+        type: 'single',
+        options: ['今すぐ対応が必要（水が使えない・漏水中）', '本日中に対応してほしい', '数日内でよい'],
+      })
+    }
+  }
+
+  // 年金・手続き
+  else if (/(年金|国民年金|厚生年金|受給|申請|手続|書類|マイナンバー|住所変更|転入|転出)/.test(text)) {
+    questions.push({
+      id: 'procedure_type',
+      text: 'お手続きの種類を教えてください',
+      type: 'single',
+      options: ['転入・転出・住所変更', '年金・給付金の申請', '各種証明書の発行', 'マイナンバー関連', 'その他'],
+    })
+    if (questions.length < 3) {
+      questions.push({
+        id: 'procedure_urgency',
+        text: '期限はありますか？',
+        type: 'single',
+        options: ['今週中に必要', '今月中に必要', '急ぎではない'],
+      })
+    }
+  }
+
+  // 子育て・保育
+  else if (/(子育て|保育|幼稚園|保育園|育児|児童|小学校|学童|入園)/.test(text)) {
+    questions.push({
+      id: 'childcare_type',
+      text: 'お子さんの年齢や状況を教えてください',
+      type: 'single',
+      options: ['0〜2歳（乳幼児）', '3〜5歳（幼稚園・保育園年齢）', '小学生', '中学生以上'],
+    })
+    if (questions.length < 3) {
+      questions.push({
+        id: 'childcare_issue',
+        text: 'ご相談の内容はどちらですか？',
+        type: 'single',
+        options: ['保育園・幼稚園への入園', '学童保育', '子育て支援サービスの紹介', 'その他'],
+      })
+    }
+  }
+
+  // ─── 共通質問（ドメイン特化がない場合 or 補足として） ────────────
+
+  // 場所情報がなければ追加
+  if (questions.length < 3 && !/(丁目|番地|交差点|公園|駅|付近|の前|場所|住所|地図)/.test(text)) {
     questions.push({
       id: 'location',
-      text: '問い合わせの場所や住所があれば教えてください（任意）',
+      text: '問い合わせに関連する場所・住所があれば教えてください',
       type: 'text',
     })
   }
 
-  // 日時情報がなければ質問
-  if (!/(今日|昨日|先週|\d+日|午前|午後|時頃|いつ|日時)/.test(text)) {
+  // 日時情報がなく、かつ問題発生日時が関係しそうな場合
+  if (questions.length < 3 && !/(今日|昨日|先週|\d+日|午前|午後|時頃|いつから)/.test(text)
+    && /(いつ|発生|困って|気づい|始まっ)/.test(text)) {
     questions.push({
       id: 'datetime',
-      text: '発生した日時や時間帯を教えてください（任意）',
+      text: '問題に気づいた日時や時間帯を教えてください',
       type: 'text',
     })
   }
 
-  // 緊急度確認
-  if (/(困|危|急|早急)/.test(text) && questions.length < 3) {
+  // 緊急度確認（緊急ワードがある場合）
+  if (questions.length < 3 && /(困って|危険|今すぐ|至急|緊急|早急)/.test(text)) {
     questions.push({
-      id: 'urgency',
-      text: '緊急の対応が必要ですか？',
+      id: 'urgency_level',
+      text: 'どの程度の緊急対応が必要ですか？',
       type: 'single',
-      options: ['今すぐ対応が必要', '数日以内でよい', '急ぎではない'],
+      options: ['今すぐ（生命・安全に関わる）', '本日中', '数日内でよい', '急ぎではない'],
     })
   }
 
