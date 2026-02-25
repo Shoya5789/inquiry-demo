@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  dept         String
+  role         String   @default("staff") // admin | staff
+  createdAt    DateTime @default(now())
+
+  approvedAnswers Answer[]
+  auditLogs       AuditLog[]
+}
+
+model Inquiry {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  channel        String   @default("web") // web | email | phone
+  rawText        String
+  normalizedText String
+  aiSummary      String   @default("")
+  urgency        String   @default("MED") // HIGH | MED | LOW
+  importance     String   @default("MED") // HIGH | MED | LOW
+  deptSuggested  String   @default("")
+  deptActual     String   @default("")
+  status         String   @default("NEW") // NEW | IN_PROGRESS | ANSWERED
+  tags           String   @default("[]") // JSON array string
+  followupQAJson String   @default("[]") // JSON string of [{question, answer}]
+  needsReply     Boolean  @default(false)
+  contactName    String   @default("")
+  contactEmail   String   @default("")
+  contactPhone   String   @default("")
+  addressText    String   @default("")
+  lat            Float?
+  lng            Float?
+  locale         String   @default("ja")
+  isRead         Boolean  @default(false)
+
+  answers Answer[]
+}
+
+model Answer {
+  id                    String    @id @default(cuid())
+  inquiryId             String
+  createdAt             DateTime  @default(now())
+  draftPolicyJson       String    @default("{}") // JSON: {conclusion, reasoning, missingInfo[], cautions[], nextActions[]}
+  draftAnswerText       String    @default("")
+  draftSupplementalText String    @default("")
+  sourcesJson           String    @default("[]") // JSON array of {type, title, uri, snippet, sourceId}
+  finalAnswerText       String    @default("")
+  approvedByUserId      String?
+  approvedAt            DateTime?
+  sentChannel           String    @default("none") // email | phone | none
+  sentAt                DateTime?
+
+  inquiry    Inquiry @relation(fields: [inquiryId], references: [id])
+  approvedBy User?   @relation(fields: [approvedByUserId], references: [id])
+}
+
+model KnowledgeSource {
+  id           String   @id @default(cuid())
+  type         String   // text | file | url
+  name         String
+  uri          String   @default("")
+  content      String
+  contentHash  String
+  lastSyncedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  actorUserId String?
+  action      String   // VIEW_INQUIRY | EDIT_TAGS | GENERATE_AI | APPROVE_ANSWER | SEND_ANSWER | IMPORT_EMAIL | SYNC_KB
+  targetType  String   // Inquiry | Answer | KnowledgeSource
+  targetId    String
+  metaJson    String   @default("{}")
+
+  actor User? @relation(fields: [actorUserId], references: [id])
+}
